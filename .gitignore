@@ -1,26 +1,63 @@
-# Visual Studio
-bin/
-obj/
-.vs/
-*.user
-*.suo
+# ==========================================
+# ДОПОЛНИТЕЛЬНЫЕ РАЗДЕЛЫ
+# ==========================================
 
-# ���� ������
-*.mdf
-*.ldf
-*.db
+# 1. ВРЕМЕННЫЕ ФАЙЛЫ
+*.tmp
+*.temp
+*.cache
+cache/
+temp/
 
-# ����
-*.log
+# 2. РЕЗЕРВНЫЕ КОПИИ
+*.bak
+*.backup
+*.old
+*.orig
 
-# ���������
-appsettings.Development.json
-appsettings.Production.json
+# 3. ФАЙЛЫ ПРОФИЛИРОВАНИЯ
+*.diagsession
+*.performance
+*.etl
 
-# ����� ������
-Debug/
-Release/
+# 4. ФАЙЛЫ ПУБЛИКАЦИИ
+publish/
+output/
+deploy/
+dist/
 
-# ��������� �����
-Thumbs.db
-desktop.ini
+# 5. АРХИВЫ
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# 6. КОНФИГУРАЦИИ IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# 7. ФАЙЛЫ ДОКУМЕНТАЦИИ (НЕ ИСХОДНИКИ)
+*.chm
+*.pdf
+*.docx
+*.xlsx
+
+# 8. КОМПИЛИРОВАННЫЕ ФАЙЛЫ
+*.dll
+*.exe
+*.so
+*.dylib
+*.o
+
+# 9. ФАЙЛЫ ТЕСТОВ
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# 10. ИСКЛЮЧЕНИЯ
+!*.example
+!*.sample
+!*.default
