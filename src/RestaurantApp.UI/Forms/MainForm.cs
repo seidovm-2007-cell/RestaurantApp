@@ -29,6 +29,7 @@ namespace RestaurantApp.UI.Forms
         private Button btnReports = new();
         private Button btnUsers = new();
         private Button btnAllReservations = new();
+        private Button btnOrderStatus = new();  // ← НОВАЯ КНОПКА
         private Button btnLogout = new();
 
         // Панель для отображения контента
@@ -123,19 +124,22 @@ namespace RestaurantApp.UI.Forms
             // КНОПКИ В БОКОВОЙ ПАНЕЛИ
             // ============================================================
 
-            // Кнопка "Заказы"
+            // Кнопка "Заказы" (для всех)
             btnOrders = CreateSidebarButton("📋 Заказы", 0);
             btnOrders.Click += BtnOrders_Click!;
 
-            // Кнопка "Схема зала"
+            // Кнопка "Схема зала" (для всех)
             btnTables = CreateSidebarButton("🪑 Схема зала", 1);
             btnTables.Click += BtnTables_Click!;
 
-            // Кнопка "Бронирования"
-            btnReservations = CreateSidebarButton("📅 Бронирования", 2);
-            btnReservations.Click += BtnReservations_Click!;
+            // Кнопка "Бронирования" (для всех, кроме кухни)
+            if (_currentUser.RoleID != 3 && _currentUser.RoleID != 7)
+            {
+                btnReservations = CreateSidebarButton("📅 Бронирования", 2);
+                btnReservations.Click += BtnReservations_Click!;
+            }
 
-            // Кнопка "Меню" (только для администратора)
+            // Кнопка "Управление меню" (только для администратора)
             if (_currentUser.RoleID == 5)
             {
                 btnMenu = CreateSidebarButton("🍕 Управление меню", 3);
@@ -161,6 +165,15 @@ namespace RestaurantApp.UI.Forms
             {
                 btnAllReservations = CreateSidebarButton("📋 Все брони", 6);
                 btnAllReservations.Click += BtnAllReservations_Click!;
+            }
+
+            // ============================================================
+            // НОВАЯ КНОПКА "СТАТУС ЗАКАЗОВ" (только для клиента)
+            // ============================================================
+            if (_currentUser.RoleID == 8) // Клиент
+            {
+                btnOrderStatus = CreateSidebarButton("📋 Статус заказов", 7);
+                btnOrderStatus.Click += BtnOrderStatus_Click!;
             }
 
             // ============================================================
@@ -223,32 +236,26 @@ namespace RestaurantApp.UI.Forms
         {
             try
             {
-                // 1. Активные заказы (не отменены и не завершены)
                 int activeOrders = _context.Orders
-                    .Count(o => o.OrderStatus != "Отменен" && o.OrderStatus != "Готов");
+                    .Count(o => o.OrderStatus != "Отменен" && o.OrderStatus != "Готов" && o.OrderStatus != "Выдан Клиенту");
 
-                // 2. Свободные столы
                 int freeTables = _context.Tables
                     .Count(t => t.Status == "Свободен");
 
-                // 3. Брони на сегодня
                 int todayReservations = _context.Reservations
                     .Count(r => r.ReservationDate.Date == DateTime.Today && r.Status == "Активна");
 
-                // 4. Выручка сегодня
                 decimal todayRevenue = _context.Payments
                     .Where(p => p.PaymentDate.Date == DateTime.Today)
                     .Sum(p => p.Amount);
 
-                // Обновляем карточки
                 UpdateStatCard(lblActiveOrders, "📋", "Активных заказов", activeOrders.ToString());
                 UpdateStatCard(lblFreeTables, "🪑", "Свободных столов", freeTables.ToString());
                 UpdateStatCard(lblTodayReservations, "📅", "Броней сегодня", todayReservations.ToString());
                 UpdateStatCard(lblTodayRevenue, "💰", "Выручка сегодня", $"{todayRevenue:F2} ₽");
             }
-            catch (Exception ex)
+            catch
             {
-                // Если БД не доступна, показываем заглушки
                 UpdateStatCard(lblActiveOrders, "📋", "Активных заказов", "0");
                 UpdateStatCard(lblFreeTables, "🪑", "Свободных столов", "0");
                 UpdateStatCard(lblTodayReservations, "📅", "Броней сегодня", "0");
@@ -265,13 +272,14 @@ namespace RestaurantApp.UI.Forms
             }
         }
 
+        // ============================================================
+        // ПРИВЕТСТВИЕ
+        // ============================================================
+
         private void ShowWelcomeMessage()
         {
             pnlWorkspace.Controls.Clear();
 
-            // ============================================================
-            // ПРИВЕТСТВИЕ
-            // ============================================================
             var lblWelcome = new Label
             {
                 Text = $"👋 Добро пожаловать, {_currentUser.FullName}!",
@@ -302,9 +310,6 @@ namespace RestaurantApp.UI.Forms
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // ============================================================
-            // СТАТИСТИЧЕСКИЕ КАРТОЧКИ
-            // ============================================================
             var pnlStats = new Panel
             {
                 Dock = DockStyle.Top,
@@ -323,38 +328,29 @@ namespace RestaurantApp.UI.Forms
             };
             pnlStats.Controls.Add(lblStats);
 
-            // Создаём 4 карточки
             int cardY = 50;
             int cardWidth = 170;
             int cardHeight = 100;
             int spacing = 20;
             int startX = 20;
 
-            // Карточка 1: Активные заказы
             lblActiveOrders = CreateStatCard(pnlStats, "📋", "Активных заказов", "0",
                 Color.FromArgb(52, 152, 219), startX, cardY, cardWidth, cardHeight);
 
-            // Карточка 2: Свободные столы
             lblFreeTables = CreateStatCard(pnlStats, "🪑", "Свободных столов", "0",
                 Color.FromArgb(46, 204, 113), startX + cardWidth + spacing, cardY, cardWidth, cardHeight);
 
-            // Карточка 3: Брони сегодня
             lblTodayReservations = CreateStatCard(pnlStats, "📅", "Броней сегодня", "0",
                 Color.FromArgb(155, 89, 182), startX + (cardWidth + spacing) * 2, cardY, cardWidth, cardHeight);
 
-            // Карточка 4: Выручка сегодня
             lblTodayRevenue = CreateStatCard(pnlStats, "💰", "Выручка сегодня", "0 ₽",
                 Color.FromArgb(241, 196, 15), startX + (cardWidth + spacing) * 3, cardY, cardWidth, cardHeight);
 
-            // ============================================================
-            // СБОРКА
-            // ============================================================
             pnlWorkspace.Controls.Add(pnlStats);
             pnlWorkspace.Controls.Add(lblDate);
             pnlWorkspace.Controls.Add(lblRole);
             pnlWorkspace.Controls.Add(lblWelcome);
 
-            // Обновляем статистику
             UpdateStatistics();
         }
 
@@ -399,7 +395,6 @@ namespace RestaurantApp.UI.Forms
             panel.Controls.Add(lblTitle);
             parent.Controls.Add(panel);
 
-            // Возвращаем lblValue для обновления
             return lblValue;
         }
 
@@ -413,7 +408,7 @@ namespace RestaurantApp.UI.Forms
             {
                 var orderForm = new OrderForm(_orderService, _currentUser);
                 orderForm.ShowDialog();
-                UpdateStatistics(); // Обновляем статистику после закрытия
+                UpdateStatistics();
                 ShowWelcomeMessage();
             }
             catch (Exception ex)
@@ -427,8 +422,9 @@ namespace RestaurantApp.UI.Forms
         {
             try
             {
-                var tableMapForm = new TableMapForm();
+                var tableMapForm = new TableMapForm(_currentUser);
                 tableMapForm.ShowDialog();
+                UpdateStatistics();
             }
             catch (Exception ex)
             {
@@ -459,13 +455,14 @@ namespace RestaurantApp.UI.Forms
             {
                 if (_currentUser.RoleID != 5)
                 {
-                    MessageBox.Show("Доступ запрещен! Только для администратора.", "Ошибка",
+                    MessageBox.Show("⛔ Доступ запрещен!", "Ошибка",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 var menuForm = new MenuManagementForm();
                 menuForm.ShowDialog();
+                UpdateStatistics();
             }
             catch (Exception ex)
             {
@@ -480,12 +477,12 @@ namespace RestaurantApp.UI.Forms
             {
                 if (_currentUser.RoleID != 5)
                 {
-                    MessageBox.Show("Доступ запрещен! Только для администратора.", "Ошибка",
+                    MessageBox.Show("⛔ Доступ запрещен!", "Ошибка",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                var reportsForm = new ReportsForm();
+                var reportsForm = new ReportsForm(_currentUser);
                 reportsForm.ShowDialog();
             }
             catch (Exception ex)
@@ -501,7 +498,7 @@ namespace RestaurantApp.UI.Forms
             {
                 if (_currentUser.RoleID != 5)
                 {
-                    MessageBox.Show("Доступ запрещен! Только для администратора.", "Ошибка",
+                    MessageBox.Show("⛔ Доступ запрещен!", "Ошибка",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -522,7 +519,7 @@ namespace RestaurantApp.UI.Forms
             {
                 if (_currentUser.RoleID != 5)
                 {
-                    MessageBox.Show("Доступ запрещен! Только для администратора.", "Ошибка",
+                    MessageBox.Show("⛔ Доступ запрещен!", "Ошибка",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -530,6 +527,30 @@ namespace RestaurantApp.UI.Forms
                 var allReservationsForm = new AllReservationsForm();
                 allReservationsForm.ShowDialog();
                 UpdateStatistics();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ============================================================
+        // НОВЫЙ ОБРАБОТЧИК ДЛЯ КНОПКИ "СТАТУС ЗАКАЗОВ"
+        // ============================================================
+        private void BtnOrderStatus_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (_currentUser.RoleID != 8)
+                {
+                    MessageBox.Show("⛔ Доступ запрещен! Только для клиентов.", "Ошибка",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var orderStatusForm = new OrderStatusForm(_currentUser);
+                orderStatusForm.ShowDialog();
             }
             catch (Exception ex)
             {

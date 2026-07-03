@@ -1,19 +1,15 @@
 ﻿using RestaurantApp.Data.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace RestaurantApp.UI.Forms
 {
     public partial class AllReservationsForm : Form
     {
         private readonly AppDbContext _context;
-        private Label lblTitle;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn6;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
         private DataGridView dgvReservations = new();
+        private Button btnRefresh = new();
+        private Button btnClose = new();
+        private Label lblCount = new();
 
         public AllReservationsForm()
         {
@@ -24,96 +20,105 @@ namespace RestaurantApp.UI.Forms
 
         private void InitializeComponent()
         {
-            lblTitle = new Label();
-            dgvReservations = new DataGridView();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn5 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
-            ((System.ComponentModel.ISupportInitialize)dgvReservations).BeginInit();
-            SuspendLayout();
-            // 
-            // lblTitle
-            // 
-            lblTitle.Location = new Point(0, 0);
-            lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(100, 23);
-            lblTitle.TabIndex = 0;
-            // 
-            // dgvReservations
-            // 
-            dgvReservations.ColumnHeadersHeight = 34;
-            dgvReservations.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7 });
-            dgvReservations.Location = new Point(151, 0);
-            dgvReservations.Name = "dgvReservations";
-            dgvReservations.RowHeadersWidth = 62;
-            dgvReservations.Size = new Size(1117, 150);
-            dgvReservations.TabIndex = 1;
-            dgvReservations.CellContentClick += dgvReservations_CellContentClick;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            dataGridViewTextBoxColumn1.HeaderText = "№";
-            dataGridViewTextBoxColumn1.MinimumWidth = 8;
-            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            dataGridViewTextBoxColumn1.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
-            dataGridViewTextBoxColumn2.HeaderText = "Стол";
-            dataGridViewTextBoxColumn2.MinimumWidth = 8;
-            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            dataGridViewTextBoxColumn2.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn3
-            // 
-            dataGridViewTextBoxColumn3.HeaderText = "Клиент";
-            dataGridViewTextBoxColumn3.MinimumWidth = 8;
-            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            dataGridViewTextBoxColumn3.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn4
-            // 
-            dataGridViewTextBoxColumn4.HeaderText = "Дата";
-            dataGridViewTextBoxColumn4.MinimumWidth = 8;
-            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
-            dataGridViewTextBoxColumn4.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn5
-            // 
-            dataGridViewTextBoxColumn5.HeaderText = "Время";
-            dataGridViewTextBoxColumn5.MinimumWidth = 8;
-            dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
-            dataGridViewTextBoxColumn5.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn6
-            // 
-            dataGridViewTextBoxColumn6.HeaderText = "Гостей";
-            dataGridViewTextBoxColumn6.MinimumWidth = 8;
-            dataGridViewTextBoxColumn6.Name = "dataGridViewTextBoxColumn6";
-            dataGridViewTextBoxColumn6.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn7
-            // 
-            dataGridViewTextBoxColumn7.HeaderText = "Статус";
-            dataGridViewTextBoxColumn7.MinimumWidth = 8;
-            dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
-            dataGridViewTextBoxColumn7.Width = 150;
-            // 
-            // AllReservationsForm
-            // 
-            BackColor = Color.White;
-            ClientSize = new Size(1398, 494);
-            Controls.Add(lblTitle);
-            Controls.Add(dgvReservations);
-            Name = "AllReservationsForm";
-            StartPosition = FormStartPosition.CenterScreen;
-            Text = "📋 Все бронирования - Ресторан";
-            ((System.ComponentModel.ISupportInitialize)dgvReservations).EndInit();
-            ResumeLayout(false);
+            this.Text = "📋 Все бронирования - Ресторан";
+            this.Size = new Size(1100, 600);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = Color.White;
+
+            int y = 20;
+
+            // Заголовок
+            var lblTitle = new Label
+            {
+                Text = "📋 Все бронирования",
+                Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                Location = new Point(20, y),
+                AutoSize = true
+            };
+            this.Controls.Add(lblTitle);
+
+            // Количество броней
+            lblCount = new Label
+            {
+                Text = "Всего броней: 0",
+                Font = new Font("Segoe UI", 12),
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Location = new Point(20, 55),
+                AutoSize = true
+            };
+            this.Controls.Add(lblCount);
+
+            y = 80;
+
+            // DataGridView
+            dgvReservations = new DataGridView
+            {
+                Location = new Point(20, y),
+                Size = new Size(1050, 430),
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                ReadOnly = true,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                RowHeadersVisible = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            };
+
+            // Колонки
+            dgvReservations.Columns.Add("Id", "№");
+            dgvReservations.Columns.Add("Table", "Стол");
+            dgvReservations.Columns.Add("Client", "Клиент");
+            dgvReservations.Columns.Add("Date", "Дата");
+            dgvReservations.Columns.Add("Time", "Время");
+            dgvReservations.Columns.Add("Guests", "Гостей");
+            dgvReservations.Columns.Add("Status", "Статус");
+
+            dgvReservations.Columns["Id"].Width = 50;
+            dgvReservations.Columns["Table"].Width = 80;
+            dgvReservations.Columns["Client"].Width = 150;
+            dgvReservations.Columns["Date"].Width = 120;
+            dgvReservations.Columns["Time"].Width = 80;
+            dgvReservations.Columns["Guests"].Width = 80;
+            dgvReservations.Columns["Status"].Width = 120;
+
+            this.Controls.Add(dgvReservations);
+
+            y += 450;
+
+            // Кнопка обновления
+            btnRefresh = new Button
+            {
+                Text = "🔄 Обновить",
+                Location = new Point(20, y),
+                Size = new Size(120, 35),
+                BackColor = Color.FromArgb(52, 152, 219),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            btnRefresh.Click += BtnRefresh_Click!;
+            this.Controls.Add(btnRefresh);
+
+            // Кнопка закрытия
+            btnClose = new Button
+            {
+                Text = "✖ Закрыть",
+                Location = new Point(160, y),
+                Size = new Size(120, 35),
+                BackColor = Color.FromArgb(149, 165, 166),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            btnClose.Click += (s, e) => this.Close();
+            this.Controls.Add(btnClose);
+        }
+
+        private void BtnRefresh_Click(object? sender, EventArgs e)
+        {
+            LoadReservations();
         }
 
         private void LoadReservations()
@@ -122,37 +127,44 @@ namespace RestaurantApp.UI.Forms
             {
                 dgvReservations.Rows.Clear();
 
-                // Заглушка - в реальном проекте из БД
-                var reservations = new[]
+                var reservations = _context.Reservations
+                    .Include(r => r.Table)
+                    .Include(r => r.User)
+                    .OrderByDescending(r => r.ReservationDate)
+                    .ThenBy(r => r.ReservationTime)
+                    .ToList();
+
+                if (reservations.Count == 0)
                 {
-                    new { Id = 1, Table = "#3", Client = "Иванов Иван", Date = "27.06.2026", Time = "18:00", Guests = 2, Status = "Активна" },
-                    new { Id = 2, Table = "#5", Client = "Петров Пётр", Date = "27.06.2026", Time = "19:30", Guests = 4, Status = "Активна" },
-                    new { Id = 3, Table = "#2", Client = "Сидоров Сидор", Date = "28.06.2026", Time = "20:00", Guests = 3, Status = "Завершена" },
-                };
+                    dgvReservations.Rows.Add("", "Нет броней", "", "", "", "", "");
+                    lblCount.Text = "Всего броней: 0";
+                    return;
+                }
 
                 foreach (var r in reservations)
                 {
+                    string statusColor = r.Status == "Активна" ? "🟢" :
+                                        r.Status == "Завершена" ? "🔵" :
+                                        r.Status == "Отменена" ? "🔴" : "⚪";
+
                     dgvReservations.Rows.Add(
-                        r.Id,
-                        r.Table,
-                        r.Client,
-                        r.Date,
-                        r.Time,
-                        r.Guests,
-                        r.Status
+                        r.ReservationID,
+                        $"#{r.Table?.TableNumber ?? 0}",
+                        r.User?.FullName ?? "Неизвестно",
+                        r.ReservationDate.ToString("dd.MM.yyyy"),
+                        r.ReservationTime.ToString(@"hh\:mm"),
+                        r.GuestCount,
+                        $"{statusColor} {r.Status}"
                     );
                 }
+
+                lblCount.Text = $"Всего броней: {reservations.Count}";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка",
+                MessageBox.Show($"Ошибка загрузки броней: {ex.Message}", "Ошибка",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void dgvReservations_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-
         }
     }
 }

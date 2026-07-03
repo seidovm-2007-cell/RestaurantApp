@@ -1,4 +1,7 @@
-﻿namespace RestaurantApp.Core.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace RestaurantApp.Core.Models
 {
     public class Order
     {
@@ -8,8 +11,8 @@
         public string OrderStatus { get; set; } = "Составление";
         public DateTime OrderDate { get; set; } = DateTime.Now;
         public decimal TotalSum { get; set; }
+        public int? TableNumber { get; set; }  // ← ДОБАВИТЬ!
 
-        public virtual Reservation? Reservation { get; set; }
         public virtual Shift? Shift { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public virtual Payment? Payment { get; set; }

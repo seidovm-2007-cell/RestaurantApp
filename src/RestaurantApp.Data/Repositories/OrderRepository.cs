@@ -15,7 +15,7 @@ namespace RestaurantApp.Data.Repositories
             return await _dbSet
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.MenuItem)
-                .Include(o => o.Reservation)
+                // УБИРАЕМ: .Include(o => o.Reservation)
                 .Include(o => o.Shift)
                 .ThenInclude(s => s!.User)
                 .FirstOrDefaultAsync(o => o.OrderID == orderId);

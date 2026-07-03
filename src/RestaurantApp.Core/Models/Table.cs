@@ -1,4 +1,6 @@
-﻿namespace RestaurantApp.Core.Models
+﻿using System.Collections.Generic;
+
+namespace RestaurantApp.Core.Models
 {
     public class Table
     {

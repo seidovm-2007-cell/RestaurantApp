@@ -1,4 +1,7 @@
-﻿namespace RestaurantApp.Core.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace RestaurantApp.Core.Models
 {
     public class User
     {

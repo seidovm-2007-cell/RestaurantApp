@@ -1,4 +1,7 @@
-﻿namespace RestaurantApp.Core.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace RestaurantApp.Core.Models
 {
     public class Reservation
     {
@@ -14,6 +17,10 @@
 
         public virtual Table? Table { get; set; }
         public virtual User? User { get; set; }
-        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+
+        // ============================================================
+        // УБИРАЕМ СВЯЗЬ С ORDER!
+        // public virtual ICollection<Order> Orders { get; set; }
+        // ============================================================
     }
 }

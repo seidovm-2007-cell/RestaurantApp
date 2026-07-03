@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using RestaurantApp.Core.Models;
+﻿using RestaurantApp.Core.Models;
 using RestaurantApp.Data.Context;
 using RestaurantApp.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace RestaurantApp.Services
 {
@@ -34,6 +34,35 @@ namespace RestaurantApp.Services
             return await _orderRepository.AddAsync(order);
         }
 
+        public async Task<decimal> CalculateTotalAsync(int orderId)
+        {
+            var result = await _context.OrderItems
+                .Where(oi => oi.OrderID == orderId)
+                .SumAsync(oi => oi.Quantity * oi.UnitPrice * (1 - oi.Discount / 100));
+
+            return result;
+        }
+
+        public async Task<IEnumerable<Order>> GetActiveOrdersAsync()
+        {
+            var orders = await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.MenuItem)
+                .Where(o => o.OrderStatus != "Отменен" && o.OrderStatus != "Готов")
+                .OrderBy(o => o.OrderDate)
+                .ToListAsync();
+
+            return orders ?? new List<Order>();
+        }
+
+        public async Task<Order?> GetOrderByIdAsync(int orderId)
+        {
+            return await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.MenuItem)
+                .FirstOrDefaultAsync(o => o.OrderID == orderId);
+        }
+
         public async Task<Order> AddDishToOrderAsync(int orderId, int menuItemId, int quantity)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -41,7 +70,10 @@ namespace RestaurantApp.Services
             try
             {
                 var order = await _orderRepository.GetByIdAsync(orderId);
-                if (order == null || order.OrderStatus != "Составление")
+                if (order == null)
+                    throw new InvalidOperationException("Заказ не найден");
+
+                if (order.OrderStatus != "Составление")
                     throw new InvalidOperationException("Заказ не может быть изменен");
 
                 var menuItem = await _menuItemRepository.GetByIdAsync(menuItemId);
@@ -51,19 +83,13 @@ namespace RestaurantApp.Services
                 if (menuItem.StockQuantity < quantity)
                     throw new InvalidOperationException($"Недостаточно порций. Доступно: {menuItem.StockQuantity}");
 
-                var promotion = await _context.Promotions
-                    .FirstOrDefaultAsync(p => p.IsActive &&
-                        (p.MenuItemID == menuItemId || p.Category == menuItem.Category));
-
-                var discount = promotion?.DiscountPercent ?? 0;
-
                 var orderItem = new OrderItem
                 {
                     OrderID = orderId,
                     MenuItemID = menuItemId,
                     Quantity = quantity,
                     UnitPrice = menuItem.Price,
-                    Discount = discount
+                    Discount = 0
                 };
 
                 await _orderItemRepository.AddAsync(orderItem);
@@ -84,46 +110,13 @@ namespace RestaurantApp.Services
             }
         }
 
-        public async Task<Order> RemoveDishFromOrderAsync(int orderItemId)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var orderItem = await _orderItemRepository.GetByIdAsync(orderItemId);
-                if (orderItem == null)
-                    throw new InvalidOperationException("Позиция не найдена");
-
-                var order = await _orderRepository.GetByIdAsync(orderItem.OrderID);
-                if (order == null || order.OrderStatus != "Составление")
-                    throw new InvalidOperationException("Заказ не может быть изменен");
-
-                var menuItem = await _menuItemRepository.GetByIdAsync(orderItem.MenuItemID);
-                if (menuItem != null)
-                {
-                    menuItem.StockQuantity += orderItem.Quantity;
-                    await _menuItemRepository.UpdateAsync(menuItem);
-                }
-
-                await _orderItemRepository.DeleteAsync(orderItemId);
-
-                order.TotalSum = await CalculateTotalAsync(order.OrderID);
-                await _orderRepository.UpdateAsync(order);
-
-                await transaction.CommitAsync();
-                return order;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
         public async Task<Order> ConfirmOrderAsync(int orderId)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null || order.OrderStatus != "Составление")
+            if (order == null)
+                throw new InvalidOperationException("Заказ не найден");
+
+            if (order.OrderStatus != "Составление")
                 throw new InvalidOperationException("Заказ не может быть оформлен");
 
             var itemCount = await _context.OrderItems
@@ -153,8 +146,8 @@ namespace RestaurantApp.Services
                 { "Готов", new[] { "Принят на Выдачу" } }
             };
 
-            if (!validTransitions.ContainsKey(order.OrderStatus) ||
-                !validTransitions[order.OrderStatus].Contains(newStatus))
+            if (!validTransitions.TryGetValue(order.OrderStatus, out var transitions) ||
+                !transitions.Contains(newStatus))
             {
                 throw new InvalidOperationException($"Недопустимый переход статуса с '{order.OrderStatus}' на '{newStatus}'");
             }
@@ -163,23 +156,6 @@ namespace RestaurantApp.Services
             await _orderRepository.UpdateAsync(order);
 
             return order;
-        }
-
-        public async Task<decimal> CalculateTotalAsync(int orderId)
-        {
-            return await _context.OrderItems
-                .Where(oi => oi.OrderID == orderId)
-                .SumAsync(oi => oi.Quantity * oi.UnitPrice * (1 - oi.Discount / 100));
-        }
-
-        public async Task<IEnumerable<Order>> GetActiveOrdersAsync()
-        {
-            return await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-                .Where(o => o.OrderStatus != "Отменен" && o.OrderStatus != "Готов")
-                .OrderBy(o => o.OrderDate)
-                .ToListAsync();
         }
     }
 }
